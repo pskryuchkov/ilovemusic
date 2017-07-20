@@ -8,7 +8,11 @@ import json
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 import sys, argparse
 import pickle
+from os.path import isfile
+from sklearn.feature_selection import RFE
 
+# deprecated
+"""
 features_names = ["bpm",
                   "centroid",
                   "onset_regular",
@@ -20,27 +24,30 @@ features_names = ["bpm",
                   "spectral_bandwidth",
                   "volume",
                   "zero_cross"]
+"""
+"""                                               # alphabetically sorted!
+features_names_dict = {
+                        "bpm":                  { "median", "std" },
+                        "centroid":             { "mean", "std" },
+                        "onset_regular":        { },
+                        "onset_strength":       { "mean", "std" },
+                        "self-correlation":     { },
+                        "spectral_contrast":    { "mean", "std" },
+                        "spectral_flux":        { "mean", "std" },
+                        "spectral_rolloff":     { "mean", "std" },
+                        "spectral_bandwidth":   { "mean", "std" },
+                        "volume":               { "mean", "std" },
+                        "zero_cross":           { },
+                        "cepstral":             { "mean0", "mean1", "mean2", "mean3", "mean4",
+                                                    "mean5", "mean6", "mean7", "mean8", "mean9",
+                                                    "std0", "std1", "std2", "std3", "std4",
+                                                    "std5","std6", "std7", "std8", "std9" } }
+"""
 
-features_names_new = {
-                        "bpm":    {"median", "std"},
-                        "centroid": {"mean", "std"},
-                        "onset_regular":    { },
-                        "onset_strength":   {"mean", "std"},
-                        "correlation_std": { },
-                        "spectral_contrast": {"mean","std"},
-                        "spectral_flux": {"mean", "std"},
-                        "spectral_rolloff":   {"mean","std"},
-                        "spectral_bandwidth": {"mean","std"},
-                        "volume": {"mean", "std"},
-                        "zero_cross":    { },
-                        "cepstral":
-                            { "mean1", "mean2", "mean3", "mean4", "mean5",
-                                "mean6", "mean7", "mean8", "mean9", "mean10",
-                                "std1", "std2", "std3", "std4", "std5",
-                                "std6", "std7", "std8", "std9", "std10" }
-                    }
 
 
+# deprecated
+"""
 def load(fn, sort_needed=False):
     with open(fn, 'r') as file: content = file.readlines()
 
@@ -57,6 +64,8 @@ def load(fn, sort_needed=False):
         return sorted(data, key=lambda x: (x[1]))
     else:
         return data
+"""
+
 """
 def cosine(v1, v2):
     return np.dot(v1 / np.linalg.norm(v1),
@@ -109,7 +118,8 @@ def load_csv(fn):
     content = content[1:]
     return map(lambda x: x.rstrip(), content)
 
-
+# deprecated
+"""
 def classifier(formula_file, out_file, play_file = None):
     props = json.load(open(formula_file, "r"))
 
@@ -171,13 +181,17 @@ def classifier(formula_file, out_file, play_file = None):
         file.write("{},{},{}\n".format(feature_base[j][0],
                                        feature_base[j][1][0],
                                        feature_base[j][1][1]))
+"""
 
-
+# deprecated
+"""
 def print_dict(d):
     for f in sorted(d, key=d.get, reverse=True):
         print str(round(d[f], 4)) + "\t\t" + str(f)
+"""
 
-
+# deprecated
+"""
 def features_esimate2(playlist, n_validation = 10, classifier_type = "boosting"):
     props = json.load(open(playlist, "r"))
 
@@ -269,7 +283,10 @@ def features_esimate2(playlist, n_validation = 10, classifier_type = "boosting")
     #print "test accuracy", s_err / n_validation
     #print "features importance"
     #print_dict(dict(zip(features_names, i_val / n_validation)))
+"""
 
+# fix errors
+"""
 def features_esimate(playlist, n_validation = 10, classifier_type = "boosting"):
     props = json.load(open(playlist, "r"))
 
@@ -359,8 +376,10 @@ def features_esimate(playlist, n_validation = 10, classifier_type = "boosting"):
     print "test accuracy", s_err / n_validation
     print "features importance"
     print_dict(dict(zip(features_names, i_val / n_validation)))
+"""
 
-
+# deprecated
+"""
 def features_probe(playlist, classifier_type = "boosting"):
     props = json.load(open(playlist, "r"))
 
@@ -435,8 +454,9 @@ def features_probe(playlist, classifier_type = "boosting"):
     for k in range(len(all_songs)):
         d[all_songs[k]] = clf.predict_proba(feature_bank[k])[0][1]
     print_dict(d)
-
-
+"""
+# rewrite
+"""
 def closest_songs(song_name, top_n = 20):
     data_bank = []
     # format: [value, song_name, artist]
@@ -478,15 +498,61 @@ def closest_songs(song_name, top_n = 20):
                complex_feature[k]] for k in range(n_songs)]
 
     pprint(sorted(result, key=lambda x: (x[1]))[:top_n])
+"""
 
-
-def complex_load(fn, sort_needed=False):
+def complex_load(fn):
     content = open(fn, 'r').readlines()
     content = content[1:] # remove first line
 
     return [line.split(",") for line in content]
 
+"""
+def get_features_names():
+    features_names_keys = sorted(features_names_dict.keys())
+    print features_names_keys
+    f = []
+    for key in features_names_keys:
+        e_key = []
+        if len(features_names_dict[key]) == 0:
+            e_key.append(key)
+        else:
+            for subkey in features_names_dict[key]:
+                e_key.append(key + "_" + subkey)
 
+        f.append(sorted(e_key))
+    return unzip(f)
+"""
+
+def b_feature_bank(basepath, normalize=False):
+    data_bank = []
+
+    for feature_name in features_files:
+        data_bank.append(complex_load(basepath + feature_name + ".csv"))
+
+    artists = [line[0] for line in data_bank[0]]
+    songs = [line[1] for line in data_bank[0]]
+
+    raw_feature_bank = []
+    for j in range(len(features_files)):
+        # skip song and artist
+        raw_feature_bank.append([feature[2:] for feature in data_bank[j]])
+
+    # kolonki - fichi, stroki - pesni
+    raw_feature_bank = np.array(raw_feature_bank).T
+    feature_bank = np.array([unzip([map(lambda x: float(x), x)
+                                for x in song_features.tolist()])
+                                for song_features in raw_feature_bank])
+
+    #for p, x in enumerate(feature_bank[0]):
+    #    print x, features_names_long[p]
+
+    if normalize:
+        for p in range(feature_bank.shape[1]):
+            feature_bank[:, p] = feature_normalise(feature_bank[:, p])
+
+    return artists, songs, feature_bank
+
+"""
 def build_feature_bank(basepath, normalize=True):
     data_bank = []
     feature_bank = []
@@ -504,59 +570,6 @@ def build_feature_bank(basepath, normalize=True):
 
     return np.array(feature_bank).T
 
-def mark_by_class(target_class):
-    data_bank = []
-    feature_bank = []
-
-    # format: [value, song_name, artist]
-    for feature_name in features_names:
-        data_bank.append(load("../data/features/basic/tags/" + feature_name + ".csv", True))
-
-    for data in data_bank:
-        feature_bank.append([song[0] for song in data])
-
-
-    classes = []
-    for record in data_bank[0]:
-        classes.append(record[2])
-
-    feature_bank_1 = np.array(feature_bank).T
-
-    flags = [0] * feature_bank_1.shape[0]
-
-    for i in range(len(flags)):
-        if classes[i] == target_class:
-            flags[i] = 1
-
-    return flags
-
-
-def mark_by_artist(target_class):
-    data_bank = []
-    feature_bank = []
-
-    # format: [value, song_name, artist]
-    for feature_name in features_names:
-        data_bank.append(load("../data/features/basic/albums/" + feature_name + ".csv", True))
-
-    for data in data_bank:
-        feature_bank.append([song[0] for song in data])
-
-
-    classes = []
-    for record in data_bank[0]:
-        classes.append(record[2])
-
-    feature_bank_1 = np.array(feature_bank).T
-
-    flags = [0] * feature_bank_1.shape[0]
-
-    for i in range(len(flags)):
-        if classes[i] == target_class:
-            flags[i] = 1
-
-    return flags
-
 
 def get_songs_names(basepath):
     data_bank = []
@@ -571,6 +584,7 @@ def get_songs_names(basepath):
 
     return feature_bank[0]
 
+
 def get_artist_names(basepath):
     data_bank = []
     feature_bank = []
@@ -583,6 +597,7 @@ def get_artist_names(basepath):
         feature_bank.append([song[2] for song in data])
 
     return feature_bank[0]
+"""
 
 
 def get_top_bands(top, rank_func='mean'):
@@ -607,65 +622,146 @@ def get_top_bands(top, rank_func='mean'):
         for key in points_dict.keys():
             points.append([key, points_dict[key]])
 
-    return sorted(points, key=lambda x: -x[1])
+    return sorted(points, key=lambda x: x[1], reverse=True)
 
 
-def class_proba():
-    target_class = "happy"
-    print "class:", target_class
-    n_features = 6
+def mark_tag(target_class, tags_bank):
+    flags = []
+    positive_idx = []
+    negative_idx = []
 
-    tag_bank = build_feature_bank("../data/features/basic/tags/")
+    for i in range(len(tags_bank)):
+        if tags_bank[i] == target_class:
+            flags.append(1)
+            positive_idx.append(i)
+        else:
+            flags.append(0)
+            negative_idx.append(i)
 
-    favourite_bank = build_feature_bank("../data/features/basic/albums/")
-    favourite_songs = get_songs_names("../data/features/basic/albums/")
-    favourite_artists = get_artist_names("../data/features/basic/albums/")
+    return np.array(flags), \
+           positive_idx, \
+           negative_idx
 
-    flags = mark_by_class(target_class)
 
-    features_idx = rfe_estimate(target_class, topn=n_features)
-    tag_bank = tag_bank[:, features_idx]
-    favourite_bank = favourite_bank[:, features_idx]
+def mark_artist(target_artist, artist_bank):
+    flags = []
+    for i in range(len(artist_bank)):
+        if artist_bank[i] == target_artist:
+            flags.append(1)
+        else:
+            flags.append(0)
+    return flags
 
-    clf = GradientBoostingClassifier(n_estimators=n_features,
+
+def binary_classificator(features, classes, train_part=0.6):
+    n_songs = len(classes)
+    n_train = int(train_part * n_songs)
+
+    pos_idx = [j for j in range(len(classes)) if classes[j] == 1]
+    neg_idx = [j for j in range(len(classes)) if classes[j] == 0]
+
+    np.random.shuffle(pos_idx)
+    np.random.shuffle(neg_idx)
+
+    train_features = features[pos_idx[:n_train] + neg_idx[:n_train],:]
+    train_classes = classes[pos_idx[:n_train] + neg_idx[:n_train]]
+
+    if train_part < 1.0:
+        test_features = features[pos_idx[n_train:] + neg_idx[n_train:], :]
+        test_classes = classes[pos_idx[n_train:] + neg_idx[n_train:]]
+
+    clf = GradientBoostingClassifier(n_estimators=features.shape[1],
                                      learning_rate=0.2,
-                                     max_depth=1,
-                                     random_state=1).fit(tag_bank, flags)
+                                     max_depth=2,
+                                     random_state=1).fit(train_features, train_classes)
 
-    #print "target:", target_class
-    print "score:", clf.score(tag_bank, flags)
-    class_results = clf.predict_proba(favourite_bank)
+    print "train score: ", clf.score(train_features, train_classes)
+    if train_part < 1.0:
+        print "test score:  ", clf.score(test_features, test_classes)
 
-    top_songs = sorted([[favourite_artists[i],
-                    favourite_songs[i],
+    return clf
+
+
+def relevant_music(artists, songs, class_results):
+    top_songs = sorted([[artists[i], songs[i],
                     class_results[i][1]] for i in range(len(class_results))],
                   key=lambda x: (-x[2]))
 
     top_bands = get_top_bands(top_songs)
 
-    relevant_bands = [x[0] for x in top_bands[:7]]
-    relevant_songs = [x for x in top_songs if x[0] in relevant_bands]
-    pprint(relevant_bands)
-    pprint(relevant_songs)
+    bands_points = np.array([record[1] for record in top_bands])
 
-    with open('{}.clf'.format(target_class), 'wb') as f:
-        pickle.dump(clf, f)
+    der = bands_points[:-1] - bands_points[1:]
+    print "der",der
+    n_relevant = np.argmax(der[:der.size / 2])
+    print n_relevant, der[np.argmax(der[:der.size / 2])]
+
+    #relevant_bands = [x[0] for x in top_bands[:7]]
+    #relevant_songs = [x for x in top_songs if x[0] in relevant_bands]
+
+    pprint(top_bands[:n_relevant+1])
+    return top_bands, top_songs
 
 
-def rfe_estimate(target_class, topn=6):
-    tag_bank = build_feature_bank("../data/features/basic/tags/")
-    flags = mark_by_class(target_class)
+def save_feature_info(tag, features_idx):
+    fn = "top_features.json"
 
-    from sklearn.feature_selection import RFE
-    clf = GradientBoostingClassifier(n_estimators=11,
+    if isfile(fn):
+        i_dict = dict(json.load(open(fn, "r")))
+    else:
+        i_dict = {}
+
+    i_dict[tag] = [features_names[idx] for idx in features_idx]
+
+    json.dump(i_dict, open(fn, "w+"), indent=1)
+
+
+def class_proba():
+    target_class = "melancholia"
+    print "class:", target_class
+    n_features = 14
+
+    tags, _, tag_bank = b_feature_bank(tag_features_bank)
+    fav_artists, fav_songs, fav_bank = b_feature_bank(fav_features_bank)
+
+    flags, pos_idx, neg_idx = mark_tag(target_class, tags)
+
+    features_idx = features_choose(tag_bank, flags, target_class, topn=n_features)
+
+    save_feature_info(target_class, features_idx)
+
+    tag_bank = tag_bank[:, features_idx]
+    fav_bank = fav_bank[:, features_idx]
+
+    classifier = binary_classificator(tag_bank, flags)
+
+    c_results = classifier.predict_proba(fav_bank)
+
+    top_bands, top_songs = relevant_music(fav_artists, fav_songs, c_results)
+
+
+    import matplotlib.pyplot as plt
+    plt.plot([record[1] for record in top_bands])
+    plt.plot([record[1] for record in top_bands] ,"x")
+    pprint(top_bands)
+    pprint(top_songs)
+    plt.show()
+    #with open('../data/classifiers/{}.clf'.format(target_class), 'wb') as f:
+    #    pickle.dump(classifier, f)
+
+
+def features_choose(tag_bank, flags, target_class, topn=6):
+
+    clf = GradientBoostingClassifier(n_estimators=39,
                                      learning_rate=0.2,
                                      max_depth=1,
                                      random_state=1)
-    #print "class:", target_class
+
     rfe = RFE(clf, 1)
     res = rfe.fit(tag_bank, flags)
 
     rank = sorted(zip(range(len(features_names)), res.ranking_), key=lambda x: (x[1]))
+    #pprint(sorted(zip(features_names_long, res.ranking_), key=lambda x: (x[1])))
     #pprint(sorted(zip(features_names, res.ranking_), key=lambda x: (x[1]))[:topn])
     rank = rank[:topn]
 
@@ -677,7 +773,8 @@ def cosine(u, v):
     v = np.array(v)
     return np.sum(u*v / (np.linalg.norm(u) * np.linalg.norm(v)))
 
-
+# merge with closest songs
+"""
 def closest_songs_by_metric():
     target_class1 = "sad"
 
@@ -709,44 +806,65 @@ def closest_songs_by_metric():
                     dists[i]] for i in range(len(dists))],
                   key=lambda x: (x[2]))
     pprint(top_bands(top))
+"""
 
 
 def artist_stat():
-    #favourite_artists = get_artist_names("../data/features/basic/albums/")
-    artist = "Queen"
-    print "artist:", artist
-    artist_flags = mark_by_artist(artist)
+    # incorrect ???
+    target_artist = "Depeche_Mode"
+    print "artist:", target_artist
 
-    features_bank = build_feature_bank("../data/features/basic/albums/")
-    artist_bank = np.array([features_bank[j] for j in range(len(artist_flags)) if artist_flags[j] == 1])
+    top_features = json.load(open("top_features.json", "r"))
 
-    #tags_bank = build_feature_bank("../data/features/basic/tags/")
-    #tags = list(set(get_artist_names("../data/features/basic/tags/")))
+    artists, songs, features_bank = b_feature_bank(fav_features_bank)
+    artist_flags = mark_artist(target_artist, artists)
+    artist_bank = np.array([features_bank[j] for j in range(len(artist_flags))
+                            if artist_flags[j] == 1])
 
-    tags = ["classical", "dance", "happy", "melancholia", "rock", "sad", "trash"]
+    tags, _, features_bank = b_feature_bank(tag_features_bank)
+    tags = top_features.keys()
 
-    data = []
+    artist_stat = []
     for tag in tags:
-        features_idx = rfe_estimate(tag, topn=6)
+        features_idx = [j for j in range(len(features_names))
+                        if features_names[j] in top_features[tag]]
 
-        with open('../data/classifiers/{}.clf'.format(tag), 'rb') as f:
+        with open(classifiers_bank.format(tag), 'rb') as f:
             clf = pickle.load(f)
 
-        print tag
         vals = []
         for song_features in artist_bank:
             n_song_features = np.array(song_features)[features_idx]
-
             vals.append(clf.predict_proba([n_song_features])[0][1])
-        data.append([tag, np.mean(vals)])
-    pprint(sorted(data, key=lambda x: -x[1]))
 
+        artist_stat.append([tag, np.mean(vals)])
 
+    pprint(sorted(artist_stat, key=lambda x: x[1], reverse=True))
+
+# fix this govnokod
 def unzip(a):
     b = []
     for x in a: b += x
     return b
 
+
+# test me!
+def feature_raiting(target_class, n_validation = 10):
+    tags, _, tag_bank = b_feature_bank(tag_features_bank)
+    flags, _, _ = mark_tag(target_class, tags)
+
+    s_err = 0.0
+    i_val = 0.0
+    for n in range(n_validation):
+        clf = binary_classificator()
+        i_val += clf.feature_importances_
+        s_err += clf.score(tag_bank, flags)
+
+    print "test accuracy", s_err / n_validation
+    print "features importance"
+    #print_dict(dict(zip(features_names, i_val / n_validation)))
+
+# fix errors
 def arg_run():
     # classifier.py
     # -c <file_formula>.json   run classifier with formula, JSON loaded from config.formula_path,
@@ -782,6 +900,9 @@ if __name__ == "__main__":
     #    arg_run()
     #else:
     #    pass
+
+    # deprecated
+    """
     #features_esimate2(hand_class_path + "dance" + ".json",
     #                 classifier_type="boosting")
 
@@ -802,37 +923,6 @@ if __name__ == "__main__":
     #features_probe("../data/forest.json") !!!
 
     #closest_songs("The_Black_Dahlia_Murder_Climatic_Degradation")
-    artist_stat()
-    #class_proba()
-    #rfe_estimate()
-    #closest_songs_by_metric()
-    #print cosine([0,1], [np.sqrt(2.)/2.,np.sqrt(2.)/2])
     """
-    class: happy
-    {'bpm': 11,
-     'centroid': 10,
-     'onset_regular': 1,
-     'onset_strength': 9,
-     'self-correlation': 3,
-     'spectral_bandwidth': 5,
-     'spectral_contrast': 4,
-     'spectral_flux': 8,
-     'spectral_rolloff': 7,
-     'volume': 2,
-     'zero_cross': 6}
-    """
-
-    """
-    class: dance
-    {'bpm': 11,
-     'centroid': 2,
-     'onset_regular': 4,
-     'onset_strength': 10,
-     'self-correlation': 9,
-     'spectral_bandwidth': 1,
-     'spectral_contrast': 8,
-     'spectral_flux': 7,
-     'spectral_rolloff': 6,
-     'volume': 3,
-     'zero_cross': 5}
-    """
+    #artist_stat()
+    class_proba()
