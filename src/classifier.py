@@ -1,17 +1,14 @@
-#!/Users/pavel/anaconda/bin/python
-# !/usr/bin/env python
-
+import sys
+import json
+import pickle
+import argparse
 import numpy as np
 from config import *
 from pprint import pprint
-import json
-from sklearn.ensemble import GradientBoostingClassifier, \
-    RandomForestClassifier
-import sys
-import argparse
-import pickle
 from os.path import isfile
 from sklearn.feature_selection import RFE
+from sklearn.ensemble import GradientBoostingClassifier, \
+    RandomForestClassifier
 
 
 def load_csv(fn, sep=","):
@@ -140,7 +137,7 @@ def binary_classifier(features, classes, train_part=0.6, debug_info=True):
     return clf
 
 
-def top(artists, songs, class_results):
+def top(artists, songs, class_results, cut_unrelevant=True):
     min_artists = 3
 
     top_songs = sorted([[artists[i], songs[i],
@@ -151,13 +148,14 @@ def top(artists, songs, class_results):
 
     bands_points = np.array([record[1] for record in top_bands])
 
-    der = bands_points[min_artists-1:-1] - bands_points[min_artists:]
-    n_relevant = min_artists - 1 + np.argmax(der[:int(0.4 * der.size)])
-    top_bands = top_bands[:n_relevant+1]
+    if cut_unrelevant:
+        der = bands_points[min_artists-1:-1] - bands_points[min_artists:]
+        n_relevant = min_artists - 1 + np.argmax(der[:int(0.4 * der.size)])
+        top_bands = top_bands[:n_relevant+1]
 
-    max_prob = top_songs[0][2]
-    top_songs = [record for record in top_songs
-                if record[2] > max_prob / 2.]
+        max_prob = top_songs[0][2]
+        top_songs = [record for record in top_songs
+                    if record[2] > max_prob / 2.]
 
     return top_bands, top_songs
 
@@ -186,13 +184,12 @@ def draw_array(data):
     plt.show()
 
 
-def class_relevant(target_class, n_features=12):
-    print "class:", target_class
-
+def class_relevant(target_class, n_features=12,
+                   cache_clf=True, cut_unrelevant=True):
     tags, _, tag_bank = load_features_bank(tag_features_bank)
     fav_artists, fav_songs, fav_bank = load_features_bank(fav_features_bank)
 
-    flags, pos_idx, neg_idx = mark_tag(target_class, tags)
+    flags, _, _ = mark_tag(target_class, tags)
 
     features_idx = sorted(features_choose(tag_bank, flags, topn=n_features))
 
@@ -205,28 +202,89 @@ def class_relevant(target_class, n_features=12):
 
     c_results = classifier.predict_proba(fav_bank)
 
-    top_bands, top_songs = top(fav_artists, fav_songs, c_results)
+    top_bands, top_songs = top(fav_artists, fav_songs,
+                               c_results, cut_unrelevant=cut_unrelevant)
 
-    print "* top bands *"
-    pprint(top_bands)
-    print "* top songs *"
-    pprint(top_songs)
+    if cache_clf:
+        save_classifier(target_class, classifier)
 
-    save_classifier(target_class, classifier)
+    # draw_array([record[1] for record in top_bands])
 
-    #draw_array([record[1] for record in top_bands])
+    return top_bands, top_songs
+
+
+def parse_expr(str):
+    sign_pos_cnt = str.count("+")
+    sign_neg_cnt = str.count("-")
+
+    if sign_pos_cnt + sign_neg_cnt != 1:
+        print "Error: Incorrect expression"
+        exit()
+
+    data = None
+    if sign_pos_cnt > 0:
+        sign = 1
+        data = str.split("+")
+    elif sign_neg_cnt > 0:
+        sign = -1
+        data = str.split("-")
+
+    if len(data) != 2:
+        print "Error: Incorrect expression"
+        exit()
+
+    return data[0], data[1], sign
+
+
+# experimental
+def two_classes_relevant(target_class1, target_class2,
+                         sign, max_diff=0.8, topn=10):
+
+    top_bands1, top_songs1 = class_relevant(target_class1,
+                                            cut_unrelevant=False)
+    top_bands2, top_songs2 = class_relevant(target_class2,
+                                            cut_unrelevant=False)
+
+    # names1 = [top_bands1[j][0] for j in range(len(top_bands1))]
+    # names2 = [top_bands2[j][0] for j in range(len(top_bands2))]
+
+    songs1 = [top_songs1[j][1] for j in range(len(top_songs1))]
+    songs2 = [top_songs2[j][1] for j in range(len(top_songs2))]
+
+    # top_bands_names = list(set(names1) & set(names2))
+    top_songs_names = list(set(songs1) & set(songs2))
+
+    songs_rank = []
+    n1 = max([record[2] for record in top_songs1])
+    n2 = max([record[2] for record in top_songs2])
+
+    for song in top_songs_names:
+        # prob1 = songs1.index(song)
+        # prob2 = songs2.index(song)
+
+        prob1 = [record[2] for record in top_songs1 if record[1] == song][0] / (1.0 * n1)
+        prob2 = [record[2] for record in top_songs2 if record[1] == song][0] / (1.0 * n2)
+
+        related_diff = abs(prob1 - prob2) / (prob1 + prob2)
+
+        if related_diff < max_diff:
+            songs_rank.append([song, round3((prob1 + sign * prob2) / 2.),
+                               # round3(prob1), round3(prob2),
+                               round3(related_diff)])
+
+    pprint(sorted(songs_rank, key=lambda x: x[1], reverse=True)[:topn])
 
 
 def features_choose(tag_bank, flags, topn=6, debug_info=False):
-    clf = GradientBoostingClassifier(n_estimators=39,
-                                     learning_rate=0.2,
-                                     max_depth=3,
-                                     random_state=1)
+    clf = GradientBoostingClassifier(n_estimators=39, learning_rate=0.2,
+                                     max_depth=3, random_state=1)
     rfe = RFE(clf, 1)
     res = rfe.fit(tag_bank, flags)
 
-    top_idx_rank = sorted(zip(range(len(features_names)), res.ranking_), key=lambda x: (x[1]))[:topn]
-    top_names_rank = sorted(zip(features_names, res.ranking_), key=lambda x: (x[1]))[:topn]
+    top_idx_rank = sorted(zip(range(len(features_names)), res.ranking_),
+                          key=lambda x: (x[1]))[:topn]
+    top_names_rank = sorted(zip(features_names, res.ranking_),
+                            key=lambda x: (x[1]))[:topn]
 
     top_idx = [pos[0] for pos in top_idx_rank]
     top_names = [line[0] for line in top_names_rank]
@@ -311,8 +369,7 @@ def unzip(a):
     return b
 
 
-# test me!
-def features_raiting(target_class, n_validation = 10, topn=10):
+def features_raiting(target_class, n_validation=10, topn=10):
     print "class:", target_class
     tags, _, tag_bank = load_features_bank(tag_features_bank)
     flags, _, _ = mark_tag(target_class, tags)
@@ -329,27 +386,31 @@ def features_raiting(target_class, n_validation = 10, topn=10):
     pprint(sorted([[features_names[j], round3(i_val[j] / n_validation)]
            for j in range(len(features_names))],
                   key=lambda x: x[1], reverse=True)[:topn])
-    #pprint(dict(zip(features_names, i_val / n_validation)))
 
-# fix errors
+
 def arg_run():
     # classifier.py
-
-    parser = argparse.ArgumentParser(description="Flip a switch by setting a flag")
-    parser.add_argument('-W', nargs=1)
+    #
+    parser = argparse.ArgumentParser(description="i <3 music!")
     parser.add_argument('-t', nargs=1)
     parser.add_argument('-a', nargs=1)
     parser.add_argument('-p', nargs=1)
     parser.add_argument('-f', nargs=1)
+    parser.add_argument('-s', nargs=1)
     args = parser.parse_args()
 
-    if sum(map(bool, [args.t, args.a, args.f])) > 1:
+    if sum(map(bool, [args.t, args.a, args.f, args.s])) > 1:
         print "Error: too many arguments"
         exit()
 
     if args.t is not None:
         # tag
-        class_relevant(args.t[0])
+        print "class:", args.t[0]
+        top_bands, top_songs = class_relevant(args.t[0])
+        print "* top bands *"
+        pprint(top_bands)
+        print "* top songs *"
+        pprint(top_songs)
 
     elif args.a is not None:
         # artist
@@ -363,10 +424,21 @@ def arg_run():
         # tag
         features_raiting(args.f[0])
 
+    elif args.s is not None:
+        # tag+tag
+        tag1, tag2, sign = parse_expr(args.s[0])
+        print "class1:", tag1
+        print "class2:", tag2
+        print "sign:", sign
+        two_classes_relevant(tag1, tag2, sign, topn=30)
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         arg_run()
     else:
         pass
 
-    #closest_songs("06_Sunset", ["bpm_median", "bpm_std", "centroid_mean", "centroid_std"])
+    # two_class_relevant("sad", "dance")  # ok
+    # two_class_relevant("dance", "-sad") # ok
+    # two_class_relevant("happy", "-trash") # ok
+    # closest_songs("06_Sunset", ["bpm_median", "bpm_std", "centroid_mean", "centroid_std"])
