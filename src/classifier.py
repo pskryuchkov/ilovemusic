@@ -39,6 +39,7 @@ def load_features_bank(basepath, normalize=False):
         raw_feature_bank.append([feature[2:] for feature in data_bank[j]])
 
     # kolonki - fichi, stroki - pesni
+
     raw_feature_bank = np.array(raw_feature_bank).T
     feature_bank = np.array([unzip([map(lambda x: float(x), x)
                             for x in song_features.tolist()])
@@ -186,8 +187,9 @@ def draw_array(data):
 
 def class_relevant(target_class, n_features=12,
                    cache_clf=True, cut_unrelevant=True):
-    tags, _, tag_bank = load_features_bank(tag_features_bank)
-    fav_artists, fav_songs, fav_bank = load_features_bank(fav_features_bank)
+
+    tags, _, tag_bank = load_features_bank(tag_songs_stat)
+    fav_artists, fav_songs, fav_bank = load_features_bank(fav_songs_stat)
 
     flags, _, _ = mark_tag(target_class, tags)
 
@@ -300,7 +302,7 @@ def cosine(u, v):
 
 
 def closest_songs(song, features, topn=20):
-    fav_artists, fav_songs, fav_bank = load_features_bank(fav_features_bank)
+    fav_artists, fav_songs, fav_bank = load_features_bank(fav_songs_stat)
     features_idx = [features_names.index(feature) for feature in features]
 
     fav_bank = fav_bank[:, features_idx]
@@ -316,7 +318,7 @@ def closest_songs(song, features, topn=20):
 
 def song_disp(fav_artist, topn=10):
     print "artist:", fav_artist
-    fav_artists, fav_songs, fav_bank = load_features_bank(fav_features_bank)
+    fav_artists, fav_songs, fav_bank = load_features_bank(fav_songs_stat)
     artist_idx = [j for j, artist in enumerate(fav_artists) if artist == fav_artist]
 
     fav_bank = fav_bank[artist_idx, :]
@@ -337,7 +339,7 @@ def artist_stat(target_artist):
 
     top_features = json.load(open("top_features.json", "r"))
 
-    artists, songs, features_bank = load_features_bank(fav_features_bank)
+    artists, songs, features_bank = load_features_bank(fav_songs_stat)
     artist_flags = mark_artist(target_artist, artists)
     artist_bank = np.array([features_bank[j] for j in range(len(artist_flags))
                             if artist_flags[j] == 1])
@@ -371,7 +373,7 @@ def unzip(a):
 
 def features_raiting(target_class, n_validation=10, topn=10):
     print "class:", target_class
-    tags, _, tag_bank = load_features_bank(tag_features_bank)
+    tags, _, tag_bank = load_features_bank(tag_songs_stat)
     flags, _, _ = mark_tag(target_class, tags)
 
     s_err = 0.0
@@ -390,8 +392,15 @@ def features_raiting(target_class, n_validation=10, topn=10):
 
 def arg_run():
     # classifier.py
-    #
-    parser = argparse.ArgumentParser(description="i <3 music!")
+    # -t <tag>  most relevant bands and songs for choosed tag
+    # -a <artist> tag relevancy values for artist
+    # -f <tag>  most important features for choosed tag
+    # -s <tag1><sign><tag2> most relevant bands and songs
+    # for two tags combination; supported signs: "+", "-"
+    # -p <artist> most important features for choosed artist
+
+    parser = argparse.ArgumentParser(description="i <3 music! "
+                                                 "and this is classifier")
     parser.add_argument('-t', nargs=1)
     parser.add_argument('-a', nargs=1)
     parser.add_argument('-p', nargs=1)
@@ -438,7 +447,4 @@ if __name__ == "__main__":
     else:
         pass
 
-    # two_class_relevant("sad", "dance")  # ok
-    # two_class_relevant("dance", "-sad") # ok
-    # two_class_relevant("happy", "-trash") # ok
     # closest_songs("06_Sunset", ["bpm_median", "bpm_std", "centroid_mean", "centroid_std"])
