@@ -1,25 +1,16 @@
-albums_path = "/Users/pavel/Sources/InProgress/Python/ilovemusic/music/albums"
+favourite_path = "../music/favourite"
+tag_path = "../music/playlists"
 
-
-tag_features_bank = "../data/features/basic/tags_new/"
-fav_features_bank = "../data/features/basic/albums_new/"
+fav_songs_stat = "../data/features/favourite/"
+tag_songs_stat = "../data/features/tags/"
 
 classifiers_bank = "../data/classifiers/{}.clf"
 
-playlists_path = "/Users/pavel/Sources/InProgress/Python/ilovemusic/music/albums"
-#playlists_path = "/Users/pavel/Sources/InProgress/Python/ilovemusic/music/playlists"
-
 music_ext = [".mp3", ".wav"]
-
-basepath =          "../data/features/basic/"
-complex_path =      "../data/features/complex/"
-formula_path =      "../data/categories/formulas/"
-hand_class_path =   "../data/categories/hand-classify/"
-
 
 durs = {
             'bpm': 60,
-            'self-correlation': 20, # 40
+            'self-correlation': 20,
             'zero_cross': 30,
             'onset_strength': 60,
             'onset_regular': 40,
@@ -35,7 +26,6 @@ durs = {
             'cepstral': 30
         }
 
-
 features_files = ["bpm",
                         "centroid",
                         "onset_regular",
@@ -48,7 +38,6 @@ features_files = ["bpm",
                         "volume",
                         "zero_cross",
                         "cepstral"]
-
 
 features_names = ["bpm_median",  # #
                         "bpm_std",  # # # #
