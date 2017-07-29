@@ -1,5 +1,5 @@
 favourite_path = "../music/favourite"
-tag_path = "../music/playlists"
+tag_path = "../music/tags"
 
 fav_songs_stat = "../data/features/favourite/"
 tag_songs_stat = "../data/features/tags/"
