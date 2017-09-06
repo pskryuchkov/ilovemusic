@@ -1,27 +1,27 @@
 # ilovemusic
 
-Music auto-tagging for humans
+Automatic music classification for humans
 
 ### Usage
 
 #### extractor.py
--e <feature>    calculate feature, rewrite feature file
+`-e <feature>` calculate feature, rewrite feature file
 
--u    update base (add new songs)
+`-u` update base (add new songs)
 
--r    rebuild base (recalculate all features)
+`-r` rebuild base (recalculate all features)
 
 #### classifier.py
--t <tag>    most relevant bands and songs for choosed tag
+`-t <tag>` most relevant bands and songs for choosed tag
 
--a <artist>    tag relevancy values for artist
+`-a <artist>` tag relevancy values for artist
 
--f <tag>    most important features for choosed tag
+`-f <tag>` most important features for choosed tag
 
--s <tag1><sign><tag2>    most relevant bands and songs
+`-s <tag1><sign><tag2>` most relevant bands and songs
  for two tags combination; supported signs: "+", "-"
--p <artist>    most important features for choosed
- artistle_playlist>.json    estimate class probability by playlist, JSON loaded from config.hand_class_path
+
+`-p <artist>` most important features for choosed artist
 
 ### Avaliable tags
 classical, dance, electronic, happy, melancholia, rock, sad, trash
@@ -40,7 +40,7 @@ classical, dance, electronic, happy, melancholia, rock, sad, trash
 11. spectral median
 12. spectral bandwidth
 13. spectral rolloff
-
+14. cepstral coefficients (n=10)
 
 ### Details
 Classification algorithm is gradient boosting. Feature selection algorithm is recursive feature elimination (RFE).
