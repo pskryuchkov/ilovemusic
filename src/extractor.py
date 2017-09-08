@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from os.path import isfile, realpath, dirname, exists
+from os import chdir, makedirs
 from config import *
 import argparse, sys
 import numpy as np
@@ -364,8 +366,6 @@ def arg_run():
     # -e <feature>          calculate feature, rewrite feature file
     # -u                    update base (add new songs)
     # -r                    rebuild base (recalculate all features)
-    # config.base_path      path with basic features
-    # config.complex_path   path with composition features
 
     parser = argparse.ArgumentParser(description="i <3 music! "
                                                  "this is feature extractor")
@@ -428,6 +428,8 @@ experiment_funcs = {
 feature_names = basic_funcs.keys()
 
 if __name__ == "__main__":
+    chdir(dirname(realpath(__file__)))
+
     if len(sys.argv) > 1:
         arg_run()
     else:

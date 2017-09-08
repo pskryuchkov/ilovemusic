@@ -5,8 +5,9 @@ import argparse
 import numpy as np
 from config import *
 from pprint import pprint
-from os.path import isfile
+from os import chdir, makedirs
 from sklearn.feature_selection import RFE
+from os.path import isfile, realpath, dirname, exists
 from sklearn.ensemble import GradientBoostingClassifier, \
     RandomForestClassifier
 
@@ -175,7 +176,7 @@ def save_features_names(tag, features_idx):
 
 
 def save_classifier(clf_name, clf):
-    with open('../data/classifiers/{}.clf'.format(clf_name), 'wb') as f:
+    with open(classifiers_bank.format(clf_name), 'wb') as f:
         pickle.dump(clf, f)
 
 
@@ -442,6 +443,8 @@ def arg_run():
         two_classes_relevant(tag1, tag2, sign, topn=30)
 
 if __name__ == "__main__":
+    chdir(dirname(realpath(__file__)))
+
     if len(sys.argv) > 1:
         arg_run()
     else:
