@@ -140,7 +140,14 @@ def binary_classifier(features, classes, train_part=0.6, debug_info=True):
 
 
 def top(artists, songs, class_results, cut_unrelevant=True):
-    min_artists = 3
+    """
+    Creating lists of top bands and songs.
+    Based on idea that relevant bands have much higer score rate
+    than others, so we can detect the score gap by derivative and
+    cut unrelevant items. Experimental function.
+    """
+    min_artists = 3  # FIXME: put to config
+    relevancy_bound = 0.4
 
     top_songs = sorted([[artists[i], songs[i],
                     round3(class_results[i][1])] for i in range(len(class_results))],
@@ -152,7 +159,10 @@ def top(artists, songs, class_results, cut_unrelevant=True):
 
     if cut_unrelevant:
         der = bands_points[min_artists-1:-1] - bands_points[min_artists:]
-        n_relevant = min_artists - 1 + np.argmax(der[:int(0.4 * der.size)])
+
+        assert(relevancy_bound * der.size >= 1.0) # too few bands
+
+        n_relevant = min_artists - 1 + np.argmax(der[:int(relevancy_bound * der.size)])
         top_bands = top_bands[:n_relevant+1]
 
         max_prob = top_songs[0][2]
