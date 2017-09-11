@@ -5,16 +5,19 @@ import argparse
 import numpy as np
 from config import *
 from pprint import pprint
-from os import chdir, makedirs
+from os import chdir, path
+from mutagen.id3 import ID3
 from sklearn.feature_selection import RFE
-from os.path import isfile, realpath, dirname, exists
+from extractor import song_info, song_list
+from os.path import isfile, realpath, dirname, abspath
 from sklearn.ensemble import GradientBoostingClassifier, \
     RandomForestClassifier
 
 
 def load_csv(fn, sep=","):
     content = open(fn, 'r').readlines()
-    content = content[1:]  # remove first line
+    content = content[1
+    :]  # remove first line
     return [line.split(sep) for line in content]
 
 
@@ -54,7 +57,7 @@ def load_features_bank(basepath, normalize=False):
 
 
 def bands_raiting(top, rank_func='mean'):
-    top_pos = [[222-j, top[j][0]] for j in range(len(top))]
+    top_pos = [[222-j, top[j][0]] for j in range(len(top))] # FIXME: constant
     points_dict = {}
     for record in top_pos:
         if record[1] in points_dict.keys():
@@ -327,6 +330,7 @@ def closest_songs(song, features, topn=20):
                    for i in range(len(fav_artists))], key=lambda x: x[1], reverse=True)[:topn])
 
 
+# FIXME: add description
 def song_disp(fav_artist, topn=10):
     print "artist:", fav_artist
     fav_artists, fav_songs, fav_bank = load_features_bank(fav_songs_stat)
@@ -401,6 +405,31 @@ def features_raiting(target_class, n_validation=10, topn=10):
                   key=lambda x: x[1], reverse=True)[:topn])
 
 
+def make_m3u(tag):
+    top_bands, top_songs = class_relevant(tag)
+    top_songs = [x[0:2] for x in top_songs]     # FIXME: not understandable
+
+    songs_directory = favourite_path
+    files = song_list(songs_directory)
+
+    songs_base = [list(reversed(song_info(songs_directory, song_file)))
+                  for song_file in files]
+
+    top_paths = [files[songs_base.index(top_songs[k])]
+                 for k in range(len(top_songs))]
+
+    with open("{}{}.m3u".format(playlists, tag), "w") as playlist:
+        playlist.write("#EXTM3U\n\n")
+
+        for j in range(len(top_paths)):
+            audio = ID3(top_paths[j])
+
+            playlist.write("#EXTINF:0,{0} - {1}\n".format(audio['TPE1'].text[0].encode('utf-8'),
+                                                          audio["TIT2"].text[0].encode('utf-8')))
+
+            playlist.write("{}\n\n".format(path.abspath(top_paths[j])))
+
+
 def arg_run():
     # classifier.py
     # -t <tag>  most relevant bands and songs for choosed tag
@@ -414,12 +443,14 @@ def arg_run():
                                                  "and this is classifier")
     parser.add_argument('-t', nargs=1)
     parser.add_argument('-a', nargs=1)
-    parser.add_argument('-p', nargs=1)
+    parser.add_argument('-d', nargs=1)
     parser.add_argument('-f', nargs=1)
     parser.add_argument('-s', nargs=1)
+    parser.add_argument('-p', nargs=1)
+
     args = parser.parse_args()
 
-    if sum(map(bool, [args.t, args.a, args.f, args.s])) > 1:
+    if sum(map(bool, [args.t, args.a, args.f, args.s, args.d, args.p])) > 1:
         print "Error: too many arguments"
         exit()
 
@@ -436,13 +467,17 @@ def arg_run():
         # artist
         artist_stat(args.a[0])
 
-    elif args.p is not None:
+    elif args.d is not None:
         # artist
-        song_disp(args.p[0])
+        song_disp(args.d[0])
 
     elif args.f is not None:
         # tag
         features_raiting(args.f[0])
+
+    elif args.p is not None:
+        # tag
+        make_m3u(args.p[0])
 
     elif args.s is not None:
         # tag+tag

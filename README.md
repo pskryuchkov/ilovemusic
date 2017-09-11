@@ -11,10 +11,12 @@ Automatic music classification for humans
 
 `-r` rebuild base (recalculate all features)
 
-`-t` calculate features for reference playlist (from `music/tags`)
+`-t` calculate features for reference playlist (from `music/tags/`)
 
 #### classifier.py
 `-t <tag>` most relevant bands and songs for choosed tag
+
+`-p <tag>` generate .m3u file of top songs for choosed tag; playlist saved in `data/playlists/`
 
 `-a <artist>` tag relevancy values for artist
 
@@ -23,7 +25,7 @@ Automatic music classification for humans
 `-s <tag1><sign><tag2>` most relevant bands and songs
  for two tags combination; supported signs: "+", "-"
 
-`-p <artist>` most important features for choosed artist
+`-d <artist>` most important features for choosed artist
 
 ### Avaliable tags
 classical, dance, electronic, happy, melancholia, rock, sad, trash
@@ -45,7 +47,7 @@ classical, dance, electronic, happy, melancholia, rock, sad, trash
 14. cepstral coefficients (n=10)
 
 ### Details
-Classifiers trained with reference playlist data (`data/features/tags`)
-Default path for your songs: `music/favourite`. Repository has precalculated features for reference and sample songs.
+Classifiers trained with reference playlist data (`data/features/tags/`)
+Default path for your songs: `music/favourite/`. Repository has precalculated features for reference and sample songs.
 
 Classification algorithm is gradient boosting. Feature selection algorithm is recursive feature elimination (RFE).

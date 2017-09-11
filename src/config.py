@@ -4,6 +4,8 @@ tag_path = "../music/tags"
 fav_songs_stat = "../data/features/favourite/"
 tag_songs_stat = "../data/features/tags/"
 
+playlists = "../data/playlists/"
+
 classifiers_bank = "../data/classifiers/{}.clf"
 
 music_ext = [".mp3", ".wav"]
