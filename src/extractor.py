@@ -90,7 +90,7 @@ def e_chords(y, sr, check_plato = False):
         n_plato = 0
         for i in range(1,len(melody_chords)):
             if melody_chords[i] == melody_chords[i-1]: n_plato += 1
-        print "n_plato", n_plato
+        print("n_plato{}".format(n_plato))
 
     h = np.histogram(melody_chords, bins = 24)[0]
 
@@ -264,8 +264,8 @@ def do_process(mode, feature_list, func_base, check_base=True, n_tracks=None):
         base_songs = [x[0:2] for x in load_csv(features_path +
                                               feature_list[0] + ".csv")]
 
-    print "target: {} songs".format(mode)
-    print "total: {0} tracks".format(len(files))
+    print("target: {} songs".format(mode))
+    print("total: {0} tracks".format(len(files)))
 
     n_features = len(feature_list)
     data = [[] for p in range(n_features)]
@@ -280,10 +280,10 @@ def do_process(mode, feature_list, func_base, check_base=True, n_tracks=None):
             y, sr = rosaload(song_file, offset=offset, dur=duration)
 
             if y.shape[0] < sr * min_song_len:
-                print "track {} too short".format(song_file)
+                print("track {} too short".format(song_file))
                 continue
 
-            print "{}. {}, {}".format(k + 1, song, artist)
+            print("{}. {}, {}".format(k + 1, song, artist))
 
             for p, feature in enumerate(feature_list):
                 y_dur = trim_track(y, sr, durs[feature])
@@ -292,7 +292,7 @@ def do_process(mode, feature_list, func_base, check_base=True, n_tracks=None):
 
                 data[p].append([artist, song, feature_value])
         else:
-            print "already present:", song, artist
+            print("already present: {}, {}".format(song, artist))
 
     # save results
     for p in range(len(feature_list)):
@@ -377,7 +377,7 @@ def arg_run():
     args = parser.parse_args()
 
     if sum(map(bool, [args.e, args.u, args.r])) > 1:
-        print "Error: too many arguments"
+        print("Error: too many arguments")
         exit()
 
     mode = "favourite"

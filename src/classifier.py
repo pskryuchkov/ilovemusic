@@ -135,9 +135,9 @@ def binary_classifier(features, classes, train_part=0.6, debug_info=True):
                                      random_state=1).fit(train_features, train_classes)
 
     if debug_info:
-        print "train score: ", round3(clf.score(train_features, train_classes))
+        print("train score: {}".format(round3(clf.score(train_features, train_classes))))
         if train_part < 1.0:
-            print "test score:  ", round3(clf.score(test_features, test_classes))
+            print("test score: {}".format(round3(clf.score(test_features, test_classes))))
 
     return clf
 
@@ -234,7 +234,7 @@ def parse_expr(str):
     sign_neg_cnt = str.count("-")
 
     if sign_pos_cnt + sign_neg_cnt != 1:
-        print "Error: Incorrect expression"
+        print("Error: Incorrect expression")
         exit()
 
     data = None
@@ -246,7 +246,7 @@ def parse_expr(str):
         data = str.split("-")
 
     if len(data) != 2:
-        print "Error: Incorrect expression"
+        print("Error: Incorrect expression")
         exit()
 
     return data[0], data[1], sign
@@ -332,7 +332,7 @@ def closest_songs(song, features, topn=20):
 
 # FIXME: add description
 def song_disp(fav_artist, topn=10):
-    print "artist:", fav_artist
+    print("artist: {}".format(fav_artist))
     fav_artists, fav_songs, fav_bank = load_features_bank(fav_songs_stat)
     artist_idx = [j for j, artist in enumerate(fav_artists) if artist == fav_artist]
 
@@ -350,7 +350,7 @@ def round3(val):
 
 
 def artist_stat(target_artist):
-    print "artist:", target_artist
+    print("artist: {}".format(target_artist))
 
     top_features = json.load(open("top_features.json", "r"))
 
@@ -387,7 +387,7 @@ def unzip(a):
 
 
 def features_raiting(target_class, n_validation=10, topn=10):
-    print "class:", target_class
+    print("class: {}".format(target_class))
     tags, _, tag_bank = load_features_bank(tag_songs_stat)
     flags, _, _ = mark_tag(target_class, tags)
 
@@ -398,7 +398,7 @@ def features_raiting(target_class, n_validation=10, topn=10):
         i_val += clf.feature_importances_
         s_err += clf.score(tag_bank, flags)
 
-    print "train score:", round3(s_err / n_validation)
+    print("train score: {}".format(round3(s_err / n_validation)))
 
     pprint(sorted([[features_names[j], round3(i_val[j] / n_validation)]
            for j in range(len(features_names))],
@@ -451,16 +451,16 @@ def arg_run():
     args = parser.parse_args()
 
     if sum(map(bool, [args.t, args.a, args.f, args.s, args.d, args.p])) > 1:
-        print "Error: too many arguments"
+        print("Error: too many arguments")
         exit()
 
     if args.t is not None:
         # tag
-        print "class:", args.t[0]
+        print("class:".format(args.t[0]))
         top_bands, top_songs = class_relevant(args.t[0])
-        print "* top bands *"
+        print("* top bands *")
         pprint(top_bands)
-        print "* top songs *"
+        print("* top songs *")
         pprint(top_songs)
 
     elif args.a is not None:
@@ -482,9 +482,9 @@ def arg_run():
     elif args.s is not None:
         # tag+tag
         tag1, tag2, sign = parse_expr(args.s[0])
-        print "class1:", tag1
-        print "class2:", tag2
-        print "sign:", sign
+        print("class1: {}".format(tag1))
+        print("class2: {}".format(tag2))
+        print("sign: {}".format(sign))
         two_classes_relevant(tag1, tag2, sign, topn=30)
 
 if __name__ == "__main__":
